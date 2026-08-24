@@ -1,161 +1,140 @@
-# I Benchmarked 5 "Free Tier" Graph Databases. The Free Tiers Weren't the Same Size.
+# Five "free tier" graph databases walk into a benchmark
 
-You'd think benchmarking graph databases means writing Cypher, running it a
-hundred times, and reporting a median. That part took an afternoon. What
-actually ate the weekend was discovering that "free tier" is not a unit of
-measurement — it's a marketing term, and five vendors don't agree on what
-it means.
+I went into this expecting the hard part to be writing Cypher. Sample a
+real dataset, load it into five databases, run the same queries against
+each one, report the medians. A weekend project, tops.
 
-This is the story of benchmarking **CognoDB Cloud** against **Neo4j
-AuraDB**, **Memgraph Cloud**, **FalkorDB Cloud**, and **ArangoDB Oasis** —
-same dataset, same queries, same client, one weekend — and what broke along
-the way turned out to be more interesting than the latency numbers
-themselves.
+The queries were the easy part. What actually took the time was getting
+five different companies' "free, no credit card, ready in a minute"
+signup flows to all answer a query from the same script — and once they
+did, discovering that "free tier" doesn't mean anywhere near the same
+thing from one vendor to the next.
 
-*(Full methodology, raw results, and the code to reproduce every number
-below live in [the repo](.) — this is the readable version of that story.)*
+This is the story of comparing **CognoDB Cloud** against **Neo4j AuraDB**,
+**Memgraph Cloud**, **FalkorDB Cloud**, and **ArangoDB Oasis**. The full
+numbers, the code, and a much longer list of caveats live in the repo's
+README — this is the version I'd actually tell a friend.
 
-## The setup: five databases, one graph, zero shortcuts
+## The setup
 
-The plan was simple on paper: take a real public dataset, sample it down to
-100,000 relationships so it fits comfortably on a free-tier instance, load
-it identically into all five platforms, and run the same five workloads —
-traversals, lookups, an aggregation, and a concurrent read/write mix —
-against each one.
+The idea was straightforward: take a real dataset, not something
+generated for the occasion, and load the identical data into all five
+platforms. I used a 100,000-edge sample of [SNAP's `soc-Pokec`
+dataset](https://snap.stanford.edu/data/soc-Pokec.html) — a real Slovak
+social network, 30.6 million friendship edges in the original, trimmed
+down to a size that wouldn't blow past anyone's free-tier storage.
 
-The dataset is a random 100,000-edge sample of [SNAP's `soc-Pokec`
-dataset](https://snap.stanford.edu/data/soc-Pokec.html), a real Slovak
-social network with 30.6 million friendship edges in total. Not a toy graph
-generated for the occasion — an actual social graph, just trimmed to a size
-that won't blow past a free tier's storage limit.
+Four of the five platforms speak Cypher, which is a nice accident of the
+graph database world — CognoDB, AuraDB, and Memgraph Cloud all talk Bolt,
+so one client class could hit all three without any per-platform code.
+FalkorDB also understands Cypher, just through its own Redis-flavored
+client instead of Bolt. ArangoDB is the odd one out on purpose — a
+completely different query language (AQL) and storage model, because a
+benchmark that only compares near-identical Cypher engines to each other
+isn't really benchmarking anything.
 
-Four of the five platforms speak Cypher over the Bolt protocol, which
-meant one client class could talk to CognoDB, AuraDB, and Memgraph Cloud
-without modification — genuinely the same code hitting three different
-databases. FalkorDB speaks openCypher too, just over its own Redis-based
-client instead of Bolt. ArangoDB is the outlier: a different query
-language entirely (AQL), included on purpose, because a benchmark that
-only compares Cypher clones to each other isn't really testing anything.
+## Getting five accounts talking was its own project
 
-## Getting five "free" accounts online was the actual benchmark
+Every signup page says the same thing: no credit card, instance ready in
+under a minute. Four of the five actually lived up to that the moment I
+pointed a driver at them. The fifth took some digging, and honestly, so
+did two of the "working" ones once I looked closer.
 
-Every platform's signup page promises the same thing: sign up, no credit
-card, instance ready in under a minute. Four of the five delivered on
-that. Getting all five to actually *answer a query* took some detective
-work:
+Memgraph Cloud rejected every connection attempt with a TLS certificate
+error. It turns out its free instance ships a self-signed certificate, and
+the standard `bolt+s://` connection scheme insists on a certificate signed
+by a real certificate authority. Swap it for `bolt+ssc://` — same
+encryption, no certificate check — and it connects instantly. One-word
+fix, but nothing in the getting-started flow mentions it.
 
-**Memgraph Cloud** refused every connection with a TLS certificate error.
-Turned out its free instance uses a self-signed cert — the standard
-`bolt+s://` scheme demands a certificate a public CA has signed, and
-Memgraph's isn't one. The fix is a one-character difference in the
-connection URI (`bolt+ssc://` instead of `bolt+s://`), but finding that out
-cost a stack trace and a search.
+AuraDB was stranger. Right URI, right password, and it just kept saying
+Unauthorized. After staring at it for a while I realized the username
+wasn't `neo4j` — it was the instance ID. Every example on the internet
+uses `neo4j` as the username, because for most Aura instances that's
+correct. Not this one. The password had been right the entire time; I was
+just logging in as the wrong person.
 
-**AuraDB** rejected the right password with the right URI, over and over,
-with a flat "Unauthorized." The username wasn't `neo4j`. Every piece of
-Neo4j driver documentation on the internet uses `neo4j` as the example
-username, and for most Aura instances it *is* the username — except this
-one, where the console's own downloaded credentials file listed the
-instance ID as the username instead. The password was right the whole
-time.
+FalkorDB was the one that actually had me worried something was broken on
+their end. The port was open. The connection just sat there — not an
+error, just silence, for a full minute, every single attempt. Stripping
+away every layer of abstraction down to a bare Redis client (no graph
+library, just "say hello to this server") finally showed what was
+happening: the TLS handshake itself never completed. Turn TLS off
+entirely, and it connects and answers a ping in under half a second. The
+endpoint just doesn't do TLS, despite every setup guide assuming it does.
 
-**FalkorDB Cloud** was the strangest one. The TCP port was open. The
-connection just... hung. Not a fast failure — a full minute of nothing,
-every single time. Isolating the problem down to a raw Redis client (no
-FalkorDB wrapper, no graph library, just "can I say hello to this server")
-revealed the actual issue: the TLS handshake itself was timing out. The
-server accepts a plain, unencrypted connection just fine — it just doesn't
-speak TLS on this endpoint at all, despite every setup guide assuming it
-does.
+None of this is a knock on any of these companies specifically — CognoDB
+and ArangoDB worked on the first try with nothing but the documented
+defaults, so it's clearly possible to get this right. It's more that five
+companies each built their own version of "it just works," and four
+different versions of "it just works" turned out to need a fix.
 
-None of these are exotic failures. They're the kind of thing that happens
-constantly when five different companies each build their own "getting
-started" experience, and none of them are lying — CognoDB and ArangoDB
-connected on the first try with default settings, so it's not that these
-docs are universally unreliable. It's that "should just work" is doing a
-lot of unstated work in this industry, and a benchmark that skips past the
-setup friction is skipping the part most engineers will actually hit.
+## The actual surprise: nobody's free tier is the same size
 
-## The finding nobody was looking for: "free tier" doesn't mean the same amount of anything
+Going in, the plan was to treat every platform as roughly equivalent — a
+half a CPU, a couple hundred megabytes of RAM, call it a fair fight. Then
+I tried to actually measure what each platform was giving me instead of
+assuming it, and that assumption didn't survive contact with reality.
 
-The original plan was to pin every platform to the same 0.5 vCPU / 256 MB
-RAM / 1 GB storage — CognoDB's advertised free-tier ceiling — and call it a
-fair fight. Then the benchmark tried to actually *measure* each platform's
-real memory footprint instead of assuming it, and the assumption fell
-apart:
+FalkorDB's real memory ceiling, read straight off Redis's own `INFO
+memory` command, is 100 MB. My 100,000-edge dataset was sitting at roughly
+half of that the entire time it ran. Memgraph's actual limit, from the
+exact same kind of introspection, is 1.54 gigabytes — more than fifteen
+times larger, on a platform marketed with the same "free" language.
+ArangoDB Oasis doesn't even have a fixed free tier to measure — it's a
+14-day trial where you choose the instance size yourself, so there's no
+single number to report at all. And CognoDB and AuraDB, for their part,
+simply don't expose a memory or storage figure through any API a client
+can reach. I tried every trick I knew — storage-info queries, admin
+procedures, APOC — and came up empty on both.
 
-- **FalkorDB Cloud's actual memory cap is 100 MB** — measured directly via
-  Redis's own `INFO memory` command, not a guess. This benchmark's dataset
-  was using **46–52% of FalkorDB's entire memory budget** just sitting
-  there loaded.
-- **Memgraph Cloud's actual memory limit is 1.54 GiB** — over **15 times**
-  larger than FalkorDB's, for two platforms both marketed as a "free" or
-  "entry" tier.
-- **ArangoDB Oasis isn't a fixed free tier at all.** It's a 14-day trial
-  where *you* pick the instance size when you deploy it. There is no
-  universal "ArangoDB free tier" to compare against — there's whatever
-  size someone happened to select.
-- CognoDB's and AuraDB's own free tiers, meanwhile, turned out to be
-  **genuinely unmeasurable** from the outside — neither platform's query
-  API exposes a memory or storage figure, and neither has the admin
-  procedures (or APOC) installed that would let a client ask.
+So the honest summary isn't "everyone got the same resources." It's:
+of the three platforms where I could actually measure the real number,
+those numbers differed by more than an order of magnitude, and two more
+platforms won't tell you their number no matter how you ask. If you're
+choosing a graph database off a vendor's free-tier comparison page, that's
+worth remembering — the word "free" tells you what it costs, not what
+you're actually getting.
 
-So the honest version of "same resources everywhere" is: *for the three
-platforms whose real limits could actually be measured, they weren't the
-same, by more than an order of magnitude* — and two of the five platforms
-won't tell you their real number no matter how you ask. That's not a
-footnote. If you're picking a graph database based on a vendor's free-tier
-comparison chart, this is the part worth remembering: "free tier" tells you
-what you'll pay, not what you're getting.
+## The latency numbers were mostly measuring the internet
 
-## The latency numbers mostly measured the internet, not the database
+Here's the thing that should make anyone suspicious of headline latency
+numbers in general: on CognoDB and ArangoDB, a query touching one
+neighbor and a query walking three hops away came back in almost exactly
+the same time — around 307 milliseconds, both of them, every time. AuraDB
+and Memgraph sat at a flatter, faster ~204ms. FalkorDB was flatter and
+faster still, around 101ms.
 
-Here's the part that should make anyone suspicious of a benchmark's
-headline latency numbers: on CognoDB and ArangoDB, a query that touches one
-neighbor and a query that walks three hops away answered in *the same
-time* — around 307 milliseconds, every time, regardless of how much work
-the query actually did. AuraDB and Memgraph clustered at ~204ms, flat the
-same way. FalkorDB clustered lower still, around 101ms.
+A database that answers a cheap query and an expensive query at the same
+speed isn't showing you its query engine. It's showing you the round trip
+between my laptop and wherever that instance happens to live. Three flat
+bands, three different network distances — plus, in FalkorDB's case, one
+less TLS handshake to pay for than everyone else.
 
-A database that takes exactly as long to answer a cheap query as an
-expensive one isn't telling you about its query engine. It's telling you
-about the round trip between this benchmark's client and that platform's
-data center. Three flat clusters, three different network paths (plus, for
-FalkorDB, no TLS handshake tax that the other four all pay) — not three
-different levels of database speed.
+The one number that didn't fit that story was ArangoDB's aggregation
+query, which took 11.7 seconds against roughly a quarter to a bit over a
+second everywhere else. The AQL query looks up each edge's source
+document individually instead of carrying the grouping field along the
+traversal, which is a real cost that scales with the size of the graph —
+not something network latency can explain away, since every other query
+ArangoDB ran was just as network-bound as its competitors and didn't look
+like this.
 
-The one place where the numbers *did* look like a real engine difference:
-ArangoDB's aggregation query took **11.7 seconds**, against roughly a
-quarter- to one-and-a-bit seconds for everything else. The AQL query does
-a document lookup for every single edge instead of keeping the grouping
-property inline on the traversal path — a real, structural cost that
-network latency can't explain, because everything else ArangoDB did in
-this benchmark was just as network-bound as its competitors.
+## So, what actually held up
 
-## What this actually tells you
+Not "which database is fastest" — I don't think a hundred-thousand-edge
+graph, run once, from one laptop, against a free instance, can honestly
+answer that question, and I've tried not to pretend it does. What did
+hold up: treat any vendor's free-tier claims as marketing copy until
+you've measured them yourself, because the gap between two "free" tiers
+can be larger than the gap between free and paid. Read latency numbers
+with real suspicion unless you know where the client sat relative to the
+database — a number with no network context is only half a number. And
+the differences that survive once you account for the network — like
+ArangoDB's per-edge lookup — are the ones actually worth trusting.
 
-Not "which database is fastest" — that question, asked about a 100,000-edge
-graph on a shared free instance from one client machine on one day, doesn't
-have a trustworthy answer, and this piece has tried hard not to pretend it
-does. What it does tell you:
-
-1. **Read every "free tier" claim as marketing copy until you've measured
-   it**, because the actual numbers behind it can differ by more than an
-   order of magnitude between vendors using the same word.
-2. **A latency number without a network topology is half a number.** If a
-   benchmark doesn't say where the client sat relative to the database, be
-   skeptical of any comparison across platforms in different regions.
-3. **The genuine engine differences are the ones that survive removing the
-   network** — like ArangoDB's per-edge lookup cost in this run's
-   aggregation query. Those are worth trusting more than a raw millisecond
-   figure.
-4. **Setup friction is real signal, not noise.** A platform that connects
-   on the first try with the officially documented settings is telling you
-   something about its onboarding quality, independent of how fast its
-   queries run once you're in.
-
-The full results — every metric, every platform, every caveat this piece
-didn't have room for — are in the repo's README, with the code to
-reproduce every number above from scratch on your own free-tier accounts.
-If a number here looks wrong, that's the point of publishing the harness
-alongside the results: go check it.
+Everything above — every metric, every platform, the full list of caveats
+this piece didn't have room for — is in the repo, along with the code to
+run it yourself against your own free-tier accounts. If a number here
+looks off, that's kind of the point of publishing the harness next to the
+results: go check it.
