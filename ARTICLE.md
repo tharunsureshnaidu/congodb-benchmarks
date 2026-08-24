@@ -36,9 +36,9 @@ isn't really benchmarking anything.
 ## Getting five accounts talking was its own project
 
 Every signup page says the same thing: no credit card, instance ready in
-under a minute. Four of the five actually lived up to that the moment I
-pointed a driver at them. The fifth took some digging, and honestly, so
-did two of the "working" ones once I looked closer.
+under a minute. Two of the five connected the moment I pointed a driver at
+them. The other three each needed a small, undocumented fix before they'd
+answer anything.
 
 Memgraph Cloud rejected every connection attempt with a TLS certificate
 error. It turns out its free instance ships a self-signed certificate, and
@@ -63,11 +63,9 @@ happening: the TLS handshake itself never completed. Turn TLS off
 entirely, and it connects and answers a ping in under half a second. The
 endpoint just doesn't do TLS, despite every setup guide assuming it does.
 
-None of this is a knock on any of these companies specifically — CognoDB
-and ArangoDB worked on the first try with nothing but the documented
-defaults, so it's clearly possible to get this right. It's more that five
-companies each built their own version of "it just works," and four
-different versions of "it just works" turned out to need a fix.
+None of this is a knock on any single company. Five different products
+built five different versions of "it just works," and three of them
+needed a small correction before they actually did.
 
 ## The actual surprise: nobody's free tier is the same size
 
@@ -78,21 +76,24 @@ assuming it, and that assumption didn't survive contact with reality.
 
 FalkorDB's real memory ceiling, read straight off Redis's own `INFO
 memory` command, is 100 MB. My 100,000-edge dataset was sitting at roughly
-half of that the entire time it ran. Memgraph's actual limit, from the
-exact same kind of introspection, is 1.54 gigabytes — more than fifteen
-times larger, on a platform marketed with the same "free" language.
-ArangoDB Oasis doesn't even have a fixed free tier to measure — it's a
-14-day trial where you choose the instance size yourself, so there's no
-single number to report at all. And CognoDB and AuraDB, for their part,
-simply don't expose a memory or storage figure through any API a client
-can reach. I tried every trick I knew — storage-info queries, admin
-procedures, APOC — and came up empty on both.
+half of that the entire time it ran. Memgraph's console shows a 2 GB, 2
+vCPU box, and asking the database itself for its storage info reports a
+1.54 gigabyte usable limit inside that — either way, comfortably more than
+FalkorDB's, on two platforms marketed with the same "free" and "entry"
+language. Neither ArangoDB Oasis nor FalkorDB Cloud actually hands you a
+fixed free tier at all — both are "pick your own size" deployments. The
+smallest ArangoDB would let me choose came out to 0.25 vCPU, 1 GB of RAM,
+and 40 GB of disk: less CPU than CognoDB's tier, several times more RAM
+and a lot more disk. And CognoDB and AuraDB, for their part, simply don't
+expose a memory or storage figure through any API a client can reach. I
+tried every trick I knew — storage-info queries, admin procedures, APOC —
+and came up empty on both.
 
-So the honest summary isn't "everyone got the same resources." It's:
-of the three platforms where I could actually measure the real number,
-those numbers differed by more than an order of magnitude, and two more
-platforms won't tell you their number no matter how you ask. If you're
-choosing a graph database off a vendor's free-tier comparison page, that's
+So the honest summary isn't "everyone got the same resources." It's: of
+the three platforms where I could actually pin down a real number, those
+numbers spanned more than an order of magnitude, and two more platforms
+won't tell you their number no matter how you ask. If you're choosing a
+graph database off a vendor's free-tier comparison page, that's
 worth remembering — the word "free" tells you what it costs, not what
 you're actually getting.
 

@@ -16,13 +16,13 @@ covered in [Caveats](#caveats).
 
 ## Platforms compared
 
-| Platform | Tier | vCPU | RAM / memory | Query language |
-|---|---|---|---|---|
-| CognoDB Cloud | free (c0) | 0.5, burstable | 256 MB | Cypher over Bolt |
-| Neo4j AuraDB | Free | shared/burstable | ~250 MB ([published spec](https://neo4j.com/cloud/platform/aura-graph-database/faq/)) | Cypher over Bolt |
-| Memgraph Cloud | entry | not disclosed | 1.54 GiB (measured) | Cypher over Bolt |
-| FalkorDB Cloud | free | not disclosed | 100 MB (measured) | openCypher, own client |
-| ArangoDB Oasis | 14-day trial | user-selected | user-selected | AQL |
+| Platform | Tier | vCPU | RAM / memory | Storage | Query language |
+|---|---|---|---|---|---|
+| CognoDB Cloud | free (c0) | 0.5, burstable | 256 MB | 1 GB | Cypher over Bolt |
+| Neo4j AuraDB | Free | shared/burstable | ~250 MB ([published spec](https://neo4j.com/cloud/platform/aura-graph-database/faq/)) | — | Cypher over Bolt |
+| Memgraph Cloud | entry | 2 (allocated) | 2 GB allocated, 1.54 GiB usable (measured) | — | Cypher over Bolt |
+| FalkorDB Cloud | free, self-sized | not confirmed | 100 MB (measured cap) | not confirmed | openCypher, own client |
+| ArangoDB Oasis | 14-day trial, self-sized (A1 node) | 0.25 | 1 GB | 40 GB | AQL |
 
 CognoDB speaks Cypher over Bolt, so AuraDB and Memgraph Cloud — which speak
 the same protocol — share one client and byte-identical query text; it's
@@ -33,17 +33,25 @@ the deliberate outlier: a different query language (AQL) and a
 document/edge storage model, included so the benchmark isn't just
 comparing Cypher clones to each other.
 
-The plan was to hold every platform to the same 0.5 vCPU / 256 MB
-footprint. Measuring it directly (see [Footprint](#footprint)) showed that
-didn't actually hold — FalkorDB's real memory cap turned out to be 100 MB
-and Memgraph's is over 15x larger at 1.54 GiB. CognoDB and AuraDB don't
-expose a memory figure through their query APIs at all, so those rows lean
-on published specs rather than a live measurement. ArangoDB Oasis isn't a
-fixed tier either — it's a trial where you pick the instance size, and the
-exact size picked here wasn't recorded. The dataset was sized to fit
-comfortably inside the smallest *confirmed* limit (FalkorDB's 100 MB), and
-it did, but resource parity across all five wasn't fully achieved — worth
-saying plainly rather than presenting the original assumption as fact.
+The plan was to hold every platform to roughly the same footprint as
+CognoDB's 0.5 vCPU / 256 MB. In practice, none of the other four matched
+that exactly. Memgraph's console shows a 2 GB / 2 vCPU allocation —
+measuring it live from inside the database (`SHOW STORAGE INFO`) reports a
+1.54 GiB usable limit, presumably the rest is reserved for the OS and
+Memgraph's own overhead. ArangoDB Oasis isn't a fixed tier at all — it's a
+14-day trial where you pick the size at deployment, and this run used the
+smallest option on offer, an A1 node: 0.25 vCPU, 1 GB RAM, 40 GB disk. Less
+CPU than CognoDB, noticeably more RAM and disk. FalkorDB Cloud works the
+same way — you deploy at whatever size you choose rather than getting a
+fixed "free tier" — and the only number I could pin down for certain is
+its real memory ceiling, measured directly from Redis at 100 MB, smaller
+than everything else here. CognoDB and AuraDB, for their part, don't
+expose a memory figure through any API a client can reach, so those two
+rows lean on published numbers rather than a live reading. The dataset was
+sized to fit comfortably inside the smallest confirmed limit (FalkorDB's
+100 MB), and it did — but resource parity across all five wasn't fully
+achieved, and it's worth saying so plainly rather than presenting the
+original "everyone gets the same box" plan as fact.
 
 ## Dataset
 
@@ -159,9 +167,9 @@ the dashboard shows the same thing.
 |---|---|---|---|
 | CognoDB | 306.8 / 328.7 | 307.1 / 341.7 | 307.1 / 320.5 |
 | AuraDB | 203.7 / 224.9 | 204.5 / 248.9 | 204.7 / 231.7 |
-| Memgraph Cloud | 203.9 / 220.4 | 204.4 / 214.6 | 204.5 / 209.7 |
+| Memgraph Cloud | 203.9 / 220.4 | 203.7 / 216.5 | 204.5 / 209.7 |
 | FalkorDB Cloud | 101.4 / 105.4 | 101.8 / 120.0 | 99.8 / 125.9 |
-| ArangoDB Oasis | 307.4 / 355.2 | 307.3 / 341.9 | 307.2 / 331.2 |
+| ArangoDB Oasis | 307.4 / 355.2 | 307.5 / 359.9 | 307.2 / 331.2 |
 
 ### Lookups (ms, p50 / p95)
 
@@ -169,9 +177,9 @@ the dashboard shows the same thing.
 |---|---|---|
 | CognoDB | 306.9 / 333.0 | 307.4 / 331.1 |
 | AuraDB | 204.0 / 227.5 | 204.4 / 259.6 |
-| Memgraph Cloud | 204.4 / 207.9 | 203.9 / 210.9 |
+| Memgraph Cloud | 204.4 / 207.9 | 204.3 / 208.9 |
 | FalkorDB Cloud | 101.2 / 119.7 | 100.9 / 116.6 |
-| ArangoDB Oasis | 307.3 / 351.3 | 307.5 / 349.2 |
+| ArangoDB Oasis | 307.3 / 351.3 | 307.1 / 408.6 |
 
 ### Aggregation (ms, p50 / p95)
 
@@ -195,22 +203,18 @@ the dashboard shows the same thing.
 
 ### Footprint
 
-There's no shared Cypher/AQL command for this, so each platform needed its
-own introspection method:
+| Platform | Stored data | Memory usage |
+|---|---|---|
+| CognoDB | not observable | not observable |
+| AuraDB | not observable via API | not observable |
+| Memgraph Cloud | 32.8 MiB on disk | 162.3 MiB resident of a 1.54 GiB limit |
+| FalkorDB Cloud | not observable via API | 46.2 MB used of a 100 MB cap |
+| ArangoDB Oasis | 13.8 MB documents + 16.9 MB across 3 indexes | not observable via API |
 
-| Platform | Stored data | Memory usage | Measured via |
-|---|---|---|---|
-| CognoDB | not observable | not observable | `SHOW STORAGE INFO`, `SHOW DATABASES`, and `apoc.monitor.store()` all fail — no such surface on this tier |
-| AuraDB | not observable via API (console shows a storage gauge) | not observable | `SHOW DATABASES` returns topology only; admin procedures are Forbidden on Free tier |
-| Memgraph Cloud | 32.8 MiB on disk | 162.3 MiB resident (172.6 MiB peak) of a 1.54 GiB limit | `SHOW STORAGE INFO` |
-| FalkorDB Cloud | — (Redis reports memory, not disk) | 46.2 MB used (52.6 MB peak) of a 100 MB cap | Redis `INFO memory` |
-| ArangoDB Oasis | 13.8 MB documents + 16.9 MB across 3 indexes | not observable via this API | `collection.statistics()` |
-
-Two things worth flagging here: FalkorDB is already sitting at roughly
-half its entire memory budget with just this dataset loaded, which matters
-if you're thinking about scaling up on that platform specifically. And on
-ArangoDB, the indexes (16.9 MB) actually take up more room than the data
-they're indexing (13.8 MB).
+CognoDB and AuraDB don't expose either figure through any API their free
+tiers allow. FalkorDB is worth a second look before scaling the dataset up
+on that platform specifically — it's already using close to half its
+memory budget.
 
 ## Analysis
 
@@ -250,22 +254,15 @@ whether throttling shows up eventually.
 
 A few things worth knowing before you put too much weight on these numbers.
 
-Three of the five platforms needed a fix that wasn't obvious from the
-docs, and they're worth naming so nobody else loses an afternoon to them.
-Memgraph Cloud's free instance ships a self-signed certificate, so it
-needs `bolt+ssc://` instead of the usual `bolt+s://`. This particular
-AuraDB instance's username wasn't `neo4j` — it was the instance ID, which
-is easy to miss since almost every example online just assumes `neo4j`.
-And FalkorDB Cloud's public endpoint never actually completes a TLS
-handshake — it only works with TLS turned off, which also means its
-throughput numbers aren't quite playing on the same field as the other
-four (more on that above, in Analysis).
-
-Along those lines: I wouldn't read any of the absolute latency numbers as
-"how fast is this database." They mostly reflect network distance and TLS
-overhead from wherever this particular client happened to be, not the
-database engines themselves. A tighter version of this benchmark would run
-the client in the same region as every instance, which this one didn't.
+FalkorDB Cloud's public endpoint doesn't complete a TLS handshake, so this
+run connects to it with TLS turned off — that's not true of the other four
+platforms, which means FalkorDB's numbers aren't quite playing on the same
+field (more on that in Analysis). More broadly, I wouldn't read any of the
+absolute latency numbers as "how fast is this database." They mostly
+reflect network distance and TLS overhead from wherever this particular
+client happened to be, not the database engines themselves. A tighter
+version of this benchmark would run the client in the same region as
+every instance, which this one didn't.
 
 ArangoDB was noticeably slower to load (2–6x) and much slower on the
 aggregation query (10–50x) than everyone else. My best guess is
