@@ -1,0 +1,403 @@
+{
+  "_note": "PLACEHOLDER DATA. No live benchmark run has produced this file yet. It exists only to show the dashboard's expected shape -- run scripts/run_all.sh against real accounts to replace it with results/summary.json.",
+  "cognodb": {
+    "platform": "cognodb",
+    "kind": "bolt",
+    "loading": {
+      "node_count": 68450,
+      "relationship_count": 100000,
+      "wall_clock_s": 210.4,
+      "nodes_per_s": 325.3,
+      "relationships_per_s": 475.3
+    },
+    "traversals": {
+      "hop_1": {
+        "p50": 4.2,
+        "p95": 9.8,
+        "min": 2.1,
+        "max": 22.3,
+        "n": 100
+      },
+      "hop_2": {
+        "p50": 11.6,
+        "p95": 26.4,
+        "min": 6.0,
+        "max": 55.1,
+        "n": 100
+      },
+      "hop_3": {
+        "p50": 29.8,
+        "p95": 61.2,
+        "min": 14.2,
+        "max": 120.5,
+        "n": 100
+      }
+    },
+    "lookups": {
+      "point_lookup": {
+        "p50": 3.1,
+        "p95": 7.4,
+        "min": 1.8,
+        "max": 15.0,
+        "n": 100
+      },
+      "filtered_lookup": {
+        "p50": 6.7,
+        "p95": 14.1,
+        "min": 3.9,
+        "max": 28.0,
+        "n": 100
+      }
+    },
+    "aggregation": {
+      "p50": 480.2,
+      "p95": 512.9,
+      "min": 460.1,
+      "max": 520.0,
+      "n": 20
+    },
+    "mixed_workload": [
+      {
+        "concurrency": 1,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 240,
+        "throughput_qps": 24.0
+      },
+      {
+        "concurrency": 10,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 980,
+        "throughput_qps": 98.0
+      },
+      {
+        "concurrency": 40,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 1120,
+        "throughput_qps": 112.0
+      }
+    ]
+  },
+  "aura": {
+    "platform": "aura",
+    "kind": "bolt",
+    "loading": {
+      "node_count": 68450,
+      "relationship_count": 100000,
+      "wall_clock_s": 185.2,
+      "nodes_per_s": 369.6,
+      "relationships_per_s": 540.0
+    },
+    "traversals": {
+      "hop_1": {
+        "p50": 3.6,
+        "p95": 8.1,
+        "min": 1.9,
+        "max": 18.0,
+        "n": 100
+      },
+      "hop_2": {
+        "p50": 9.8,
+        "p95": 21.6,
+        "min": 5.2,
+        "max": 44.0,
+        "n": 100
+      },
+      "hop_3": {
+        "p50": 24.1,
+        "p95": 49.7,
+        "min": 12.0,
+        "max": 95.0,
+        "n": 100
+      }
+    },
+    "lookups": {
+      "point_lookup": {
+        "p50": 2.8,
+        "p95": 6.5,
+        "min": 1.5,
+        "max": 13.0,
+        "n": 100
+      },
+      "filtered_lookup": {
+        "p50": 5.9,
+        "p95": 12.3,
+        "min": 3.2,
+        "max": 24.0,
+        "n": 100
+      }
+    },
+    "aggregation": {
+      "p50": 410.6,
+      "p95": 445.3,
+      "min": 395.0,
+      "max": 460.0,
+      "n": 20
+    },
+    "mixed_workload": [
+      {
+        "concurrency": 1,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 270,
+        "throughput_qps": 27.0
+      },
+      {
+        "concurrency": 10,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 1050,
+        "throughput_qps": 105.0
+      },
+      {
+        "concurrency": 40,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 1230,
+        "throughput_qps": 123.0
+      }
+    ]
+  },
+  "memgraph": {
+    "platform": "memgraph",
+    "kind": "bolt",
+    "loading": {
+      "node_count": 68450,
+      "relationship_count": 100000,
+      "wall_clock_s": 96.7,
+      "nodes_per_s": 707.9,
+      "relationships_per_s": 1034.1
+    },
+    "traversals": {
+      "hop_1": {
+        "p50": 1.9,
+        "p95": 4.6,
+        "min": 0.9,
+        "max": 10.0,
+        "n": 100
+      },
+      "hop_2": {
+        "p50": 4.8,
+        "p95": 10.9,
+        "min": 2.4,
+        "max": 21.0,
+        "n": 100
+      },
+      "hop_3": {
+        "p50": 11.2,
+        "p95": 23.5,
+        "min": 5.9,
+        "max": 42.0,
+        "n": 100
+      }
+    },
+    "lookups": {
+      "point_lookup": {
+        "p50": 1.4,
+        "p95": 3.3,
+        "min": 0.7,
+        "max": 7.0,
+        "n": 100
+      },
+      "filtered_lookup": {
+        "p50": 3.1,
+        "p95": 6.9,
+        "min": 1.6,
+        "max": 13.0,
+        "n": 100
+      }
+    },
+    "aggregation": {
+      "p50": 190.4,
+      "p95": 210.8,
+      "min": 180.0,
+      "max": 225.0,
+      "n": 20
+    },
+    "mixed_workload": [
+      {
+        "concurrency": 1,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 520,
+        "throughput_qps": 52.0
+      },
+      {
+        "concurrency": 10,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 2150,
+        "throughput_qps": 215.0
+      },
+      {
+        "concurrency": 40,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 2480,
+        "throughput_qps": 248.0
+      }
+    ]
+  },
+  "falkordb": {
+    "platform": "falkordb",
+    "kind": "falkordb",
+    "loading": {
+      "node_count": 68450,
+      "relationship_count": 100000,
+      "wall_clock_s": 88.3,
+      "nodes_per_s": 775.2,
+      "relationships_per_s": 1132.5
+    },
+    "traversals": {
+      "hop_1": {
+        "p50": 1.7,
+        "p95": 4.1,
+        "min": 0.8,
+        "max": 9.0,
+        "n": 100
+      },
+      "hop_2": {
+        "p50": 4.3,
+        "p95": 9.8,
+        "min": 2.1,
+        "max": 19.0,
+        "n": 100
+      },
+      "hop_3": {
+        "p50": 10.1,
+        "p95": 21.2,
+        "min": 5.2,
+        "max": 39.0,
+        "n": 100
+      }
+    },
+    "lookups": {
+      "point_lookup": {
+        "p50": 1.2,
+        "p95": 3.0,
+        "min": 0.6,
+        "max": 6.5,
+        "n": 100
+      },
+      "filtered_lookup": {
+        "p50": 2.8,
+        "p95": 6.2,
+        "min": 1.4,
+        "max": 12.0,
+        "n": 100
+      }
+    },
+    "aggregation": {
+      "p50": 175.9,
+      "p95": 198.4,
+      "min": 165.0,
+      "max": 210.0,
+      "n": 20
+    },
+    "mixed_workload": [
+      {
+        "concurrency": 1,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 560,
+        "throughput_qps": 56.0
+      },
+      {
+        "concurrency": 10,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 2280,
+        "throughput_qps": 228.0
+      },
+      {
+        "concurrency": 40,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 2510,
+        "throughput_qps": 251.0
+      }
+    ]
+  },
+  "arango": {
+    "platform": "arango",
+    "kind": "arango",
+    "loading": {
+      "node_count": 68450,
+      "relationship_count": 100000,
+      "wall_clock_s": 130.5,
+      "nodes_per_s": 524.5,
+      "relationships_per_s": 766.3
+    },
+    "traversals": {
+      "hop_1": {
+        "p50": 5.1,
+        "p95": 11.2,
+        "min": 2.6,
+        "max": 24.0,
+        "n": 100
+      },
+      "hop_2": {
+        "p50": 13.4,
+        "p95": 28.9,
+        "min": 6.8,
+        "max": 58.0,
+        "n": 100
+      },
+      "hop_3": {
+        "p50": 33.6,
+        "p95": 68.1,
+        "min": 16.5,
+        "max": 130.0,
+        "n": 100
+      }
+    },
+    "lookups": {
+      "point_lookup": {
+        "p50": 3.8,
+        "p95": 8.6,
+        "min": 2.0,
+        "max": 17.0,
+        "n": 100
+      },
+      "filtered_lookup": {
+        "p50": 7.9,
+        "p95": 16.5,
+        "min": 4.3,
+        "max": 32.0,
+        "n": 100
+      }
+    },
+    "aggregation": {
+      "p50": 260.3,
+      "p95": 288.7,
+      "min": 245.0,
+      "max": 300.0,
+      "n": 20
+    },
+    "mixed_workload": [
+      {
+        "concurrency": 1,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 300,
+        "throughput_qps": 30.0
+      },
+      {
+        "concurrency": 10,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 1100,
+        "throughput_qps": 110.0
+      },
+      {
+        "concurrency": 40,
+        "write_ratio": 0.1,
+        "duration_s": 10,
+        "total_ops": 1200,
+        "throughput_qps": 120.0
+      }
+    ]
+  }
+}

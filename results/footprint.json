@@ -1,0 +1,29 @@
+{
+  "cognodb": {
+    "stored_data_size": "not observable",
+    "memory_usage": "not observable",
+    "note": "no SHOW STORAGE INFO / APOC support on this instance's Cypher surface"
+  },
+  "aura": {
+    "stored_data_size": "not observable via query API (visible in Aura console UI)",
+    "memory_usage": "not observable",
+    "note": "SHOW DATABASES has no size field; dbms.listConfig is Forbidden; no APOC"
+  },
+  "memgraph": {
+    "memory_res": "162.26MiB",
+    "peak_memory_res": "172.55MiB",
+    "disk_usage": "32.82MiB",
+    "memory_limit": "1.54GiB"
+  },
+  "falkordb": {
+    "used_memory": "46.17M",
+    "used_memory_peak": "52.57M",
+    "maxmemory": "100.00M",
+    "maxmemory_policy": "noeviction"
+  },
+  "arango": {
+    "documents_size_bytes": 13768810,
+    "index_size_bytes": 16881342,
+    "index_count": 3
+  }
+}

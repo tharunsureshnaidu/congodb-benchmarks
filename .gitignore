@@ -1,0 +1,10 @@
+.env
+.claude/
+__pycache__/
+*.pyc
+.venv/
+data/*.txt.gz
+data/*.csv
+node_modules/
+dashboard/.next/
+dashboard/out/
